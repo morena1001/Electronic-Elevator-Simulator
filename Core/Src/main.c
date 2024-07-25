@@ -87,6 +87,7 @@ static void MX_TIM6_Init(void);
 /* USER CODE BEGIN PFP */
 void Program_Start_Light_Up(void); // An LED light up sequence that makes sure all the LED in the system work
 void Elevator_Simulator_Init(void); // Initializes all the variables to their default values
+void Choose_Floor_To_Service(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -140,44 +141,44 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-	  if (requests[0] != 0 && (!serving || (serving && floor_position == requests[0]))) {
-		  serving = requests[0];
-		  for (int i = 0; i < 2; i++) {
-			  requests[i] = requests[i + 1];
-		  }
-		  requests[2] = 0;
-//		  elevator_direction = floor_position < 1 ? 'u' : 'd';
-
-
-		  // CASE 1
-		  if (floor_position == serving/*requests[0]*/ /*&& requests[1] == 0*/) {
-			  switch(serving) {
-			  case 1:
-				  elevator_direction = 'u';
-				  HAL_GPIO_WritePin(FR1_GPIO_Port, FR1_Pin, GPIO_PIN_RESET); // Assign a value to elevator_direction based on the .direction value
-				  break;
-			  case 2:
-				  elevator_direction = floor_requests[1].direction;
-				  HAL_GPIO_WritePin(FR2_GPIO_Port, FR2_Pin, GPIO_PIN_RESET);
-				  break;
-			  case 3:
-				  elevator_direction = 'd';
-				  HAL_GPIO_WritePin(FR3_GPIO_Port, FR3_Pin, GPIO_PIN_RESET);
-				  break;
-			  }
-			  HAL_TIM_Base_Start_IT(&htim15);
-			  sprintf(msg, "%c\r\n", elevator_direction);
-			  HAL_UART_Transmit(&huart2, (uint8_t*) msg, 3, 100);
-		  }
-
-		  // CASE 2
-		  else if (!traveling && floor_position != serving) {
-			  traveling = 1;
-			  elevator_direction = floor_position > serving ? 'd' : 'u';
-			  HAL_GPIO_WritePin(GPIOC, elevator_direction == 'u' ? DU_Pin : DD_Pin, GPIO_PIN_SET);
-			  HAL_TIM_Base_Start_IT(&htim6);
-		  }
-	  }
+//	  if (requests[0] != 0 && (!serving || (serving && floor_position == requests[0]))) {
+//		  serving = requests[0];
+//		  for (int i = 0; i < 2; i++) {
+//			  requests[i] = requests[i + 1];
+//		  }
+//		  requests[2] = 0;
+////		  elevator_direction = floor_position < 1 ? 'u' : 'd';
+//
+//
+//		  // CASE 1
+//		  if (floor_position == serving/*requests[0]*/ /*&& requests[1] == 0*/) {
+//			  switch(serving) {
+//			  case 1:
+//				  elevator_direction = 'u';
+//				  HAL_GPIO_WritePin(FR1_GPIO_Port, FR1_Pin, GPIO_PIN_RESET); // Assign a value to elevator_direction based on the .direction value
+//				  break;
+//			  case 2:
+//				  elevator_direction = floor_requests[1].direction;
+//				  HAL_GPIO_WritePin(FR2_GPIO_Port, FR2_Pin, GPIO_PIN_RESET);
+//				  break;
+//			  case 3:
+//				  elevator_direction = 'd';
+//				  HAL_GPIO_WritePin(FR3_GPIO_Port, FR3_Pin, GPIO_PIN_RESET);
+//				  break;
+//			  }
+//			  HAL_TIM_Base_Start_IT(&htim15);
+//			  sprintf(msg, "%c\r\n", elevator_direction);
+//			  HAL_UART_Transmit(&huart2, (uint8_t*) msg, 3, 100);
+//		  }
+//
+//		  // CASE 2
+//		  else if (!traveling && floor_position != serving) {
+//			  traveling = 1;
+//			  elevator_direction = floor_position > serving ? 'd' : 'u';
+//			  HAL_GPIO_WritePin(GPIOC, elevator_direction == 'u' ? DU_Pin : DD_Pin, GPIO_PIN_SET);
+//			  HAL_TIM_Base_Start_IT(&htim6);
+//		  }
+//	  }
   }
   /* USER CODE END 3 */
 }
@@ -484,7 +485,7 @@ static void MX_GPIO_Init(void)
 //}
 
 void Elevator_Simulator_Init(void) {
-	HAL_NVIC_SetPriority(TIM2_IRQn, 1, 1);
+	HAL_NVIC_SetPriority(TIM2_IRQn, 0, 0);
 	HAL_NVIC_EnableIRQ(TIM2_IRQn);
 	HAL_NVIC_SetPriority(TIM6_DAC_IRQn, 1, 1);
 	HAL_NVIC_EnableIRQ(TIM6_DAC_IRQn);
@@ -585,6 +586,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
 
 			// reset the serving variable and the LED corresponding to the elevator_direction variable
 			serving = 0;
+			Choose_Floor_To_Service();
 			HAL_GPIO_WritePin(GPIOC, elevator_direction == 'u' ? DU_Pin : DD_Pin, GPIO_PIN_RESET);
 
 

@@ -356,8 +356,17 @@ void EXTI3_IRQHandler(void)
 		uint8_t i = 0;
 		while (requests[i]) i++;
 
-		// IF the floor is not currently being requested or if it is being served, AND if the most recent requested floor is not the same as this floor
-		if ((!floor_requests[0].requested || serving == 1) && (!(i == 0 && serving == 1) && !(i > 0 && requests[i - 1] == 1))) {
+		// IF the floor being serviced is the same the floor being requested
+		if (i == 0 && serving == 1) {
+			if (floor_position != serving) {
+				floor_requests[0].requested = 1;
+				floor_requests[0].direction = 'u';
+				requests[i] = 1;
+				Reset_Timer(1, &htim2);
+				HAL_GPIO_WritePin(FR1_GPIO_Port, FR1_Pin, GPIO_PIN_SET);
+			}
+		} // ELSE IF the floor is not currently being requested or if it is being served, AND if the most recent requested floor is not the same as this floor
+		  else if ((!floor_requests[0].requested || serving == 1) && (!(i == 0 && serving == 1) && !(i > 0 && requests[i - 1] == 1))) {
 			floor_requests[0].requested = 1;
 			floor_requests[0].direction = 'u';
 			requests[i] = 1;
@@ -368,6 +377,7 @@ void EXTI3_IRQHandler(void)
 			}
 
 			HAL_GPIO_WritePin(FR1_GPIO_Port, FR1_Pin, GPIO_PIN_SET);
+			Choose_Floor_To_Service();
 		}
 	}
   /* USER CODE END EXTI3_IRQn 0 */
@@ -391,8 +401,17 @@ void EXTI4_IRQHandler(void)
 		uint8_t i = 0;
 		while (requests[i]) i++;
 
-		// IF the floor is not currently being requested or if it is being served, AND if the most recent requested floor is not the same as this floor
-		if ((!floor_requests[1].requested || serving == 2) && (!(i == 0 && serving == 2) && !(i > 0 && requests[i - 1] == 2))) {
+		// IF the floor being serviced is the same the floor being requested
+		if (i == 0 && serving == 2) {
+			if (floor_position != serving) {
+				floor_requests[1].requested = 1;
+				floor_requests[1].direction = 'd';
+				requests[i] = 2;
+				Reset_Timer(1, &htim2);
+				HAL_GPIO_WritePin(FR2_GPIO_Port, FR2_Pin, GPIO_PIN_SET);
+			}
+		} // ELSE IF the floor is not currently being requested or if it is being served, AND if the most recent requested floor is not the same as this floor
+		  else if ((!floor_requests[1].requested || serving == 2) && (!(i == 0 && serving == 2) && !(i > 0 && requests[i - 1] == 2))) {
 			floor_requests[1].requested = 1;
 			floor_requests[1].direction = 'd';
 			requests[i] = 2;
@@ -403,6 +422,7 @@ void EXTI4_IRQHandler(void)
 			}
 
 			HAL_GPIO_WritePin(FR2_GPIO_Port, FR2_Pin, GPIO_PIN_SET);
+			Choose_Floor_To_Service();
 		}
 	}
   /* USER CODE END EXTI4_IRQn 0 */
@@ -430,8 +450,17 @@ void EXTI9_5_IRQHandler(void)
 	    uint8_t i = 0;
 		while (requests[i]) i++;
 
-		// IF the floor is not currently being requested or if it is being served, AND if the most recent requested floor is not the same as this floor
-		if ((!floor_requests[1].requested || serving == 2) && (!(i == 0 && serving == 2) && !(i > 0 && requests[i - 1] == 2))) {
+		// IF the floor being serviced is the same the floor being requested
+		if (i == 0 && serving == 2) {
+			if (floor_position != serving) {
+				floor_requests[1].requested = 1;
+				floor_requests[1].direction = 'u';
+				requests[i] = 2;
+				Reset_Timer(1, &htim2);
+				HAL_GPIO_WritePin(FR2_GPIO_Port, FR2_Pin, GPIO_PIN_SET);
+			}
+		} // ELSE IF the floor is not currently being requested or if it is being served, AND if the most recent requested floor is not the same as this floor
+		  else if ((!floor_requests[1].requested || serving == 2) && (!(i == 0 && serving == 2) && !(i > 0 && requests[i - 1] == 2))) {
 			floor_requests[1].requested = 1;
 			floor_requests[1].direction = 'u';
 			requests[i] = 2;
@@ -442,13 +471,23 @@ void EXTI9_5_IRQHandler(void)
 			}
 
 			HAL_GPIO_WritePin(FR2_GPIO_Port, FR2_Pin, GPIO_PIN_SET);
+			Choose_Floor_To_Service();
 		}
 	} // ELSE IF button for choosing floor 3 is pressed
       else if (pin_num == 3) {
 		uint8_t i = 0;
 		while (requests[i]) i++;
 
-		// IF the floor is not currently being requested or if it is being served, AND if the most recent requested floor is not the same as this floor
+		// IF the floor being serviced is the same the floor being requested
+		if (i == 0 && serving == 3) {
+			if (floor_position != serving) {
+				floor_requests[2].requested = 1;
+				floor_requests[2].direction = 'u';
+				requests[i] = 3;
+				Reset_Timer(1, &htim2);
+				HAL_GPIO_WritePin(FR3_GPIO_Port, FR3_Pin, GPIO_PIN_SET);
+			}
+		} // ELSE IF the floor is not currently being requested or if it is being served, AND if the most recent requested floor is not the same as this floor
 		if ((!floor_requests[2].requested || serving == 3) && (!(i == 0 && serving == 3) && !(i > 0 && requests[i - 1] == 3))) {
 			floor_requests[2].requested = 1;
 			floor_requests[2].direction = 'u';
@@ -459,7 +498,8 @@ void EXTI9_5_IRQHandler(void)
 				Reset_Timer(1, &htim2);
 			}
 
-			HAL_GPIO_WritePin(FR2_GPIO_Port, FR2_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(FR3_GPIO_Port, FR3_Pin, GPIO_PIN_SET);
+			Choose_Floor_To_Service();
 		}
 	}
   /* USER CODE END EXTI9_5_IRQn 1 */
@@ -613,9 +653,10 @@ void TIM6_DAC_IRQHandler(void)
 
 				// CHECK FOR ANY INPUTS INSIDE ELEVATOR, ONLY ALLOW TO GO IN THE CURRENT DIRECTION
 			}
-			HAL_TIM_Base_Stop_IT(&htim2);
-			start_timer = 0;
-			if (requests[0] || floor_destinations[0])		HAL_TIM_Base_Start_IT(&htim2);
+//			HAL_TIM_Base_Stop_IT(&htim2);
+//			start_timer = 0;
+//			if (requests[0] || floor_destinations[0])		HAL_TIM_Base_Start_IT(&htim2);
+			if (requests[0] || floor_destinations[0])	Reset_Timer(1, &htim2);
 			count = 0;
 			HAL_TIM_Base_Start_IT(&htim15);
 			HAL_TIM_Base_Stop_IT(&htim6);
@@ -728,42 +769,44 @@ void Reset_Timer(int num, ...) {
 }
 
 void Choose_Floor_To_Service(void) {
-	if (requests[0] != 0 && (!serving || (serving && floor_position == requests[0]))) {
-			  serving = requests[0];
-			  for (int i = 0; i < 2; i++) {
-				  requests[i] = requests[i + 1];
-			  }
-			  requests[2] = 0;
+	// IF there is at least one floor requests and if we are not serving
+	if (requests[0] && !serving) {
+		serving = requests[0];
+		for (int i = 0; i < 2; i++) {
+			requests[i] = requests[i + 1];
+		}
+		requests[2] = 0;
 
+		// CASE 1
+		// IF the elevator's floor position matches with the floor that we are serving
+		if (floor_position == serving) {
+			switch(serving) {
+			case 1:
+				elevator_direction = 'u';
+				HAL_GPIO_WritePin(FR1_GPIO_Port, FR1_Pin, GPIO_PIN_RESET);
+				break;
+			case 2:
+				elevator_direction = floor_requests[1].direction;
+				HAL_GPIO_WritePin(FR2_GPIO_Port, FR2_Pin, GPIO_PIN_RESET);
+				break;
+			case 3:
+				elevator_direction = 'd';
+				HAL_GPIO_WritePin(FR3_GPIO_Port, FR3_Pin, GPIO_PIN_RESET);
+				break;
+			}
 
-			  // CASE 1
-			  if (floor_position == serving/*requests[0]*/ /*&& requests[1] == 0*/) {
-				  switch(serving) {
-				  case 1:
-					  elevator_direction = 'u';
-					  HAL_GPIO_WritePin(FR1_GPIO_Port, FR1_Pin, GPIO_PIN_RESET); // Assign a value to elevator_direction based on the .direction value
-					  break;
-				  case 2:
-					  elevator_direction = floor_requests[1].direction;
-					  HAL_GPIO_WritePin(FR2_GPIO_Port, FR2_Pin, GPIO_PIN_RESET);
-					  break;
-				  case 3:
-					  elevator_direction = 'd';
-					  HAL_GPIO_WritePin(FR3_GPIO_Port, FR3_Pin, GPIO_PIN_RESET);
-					  break;
-				  }
-				  HAL_TIM_Base_Start_IT(&htim15);
-				  sprintf(msgs, "%c\r\n", elevator_direction);
-				  HAL_UART_Transmit(&huart2, (uint8_t*) msgs, 3, 100);
-			  }
-
-			  // CASE 2
-			  else if (!traveling && floor_position != serving) {
-				  traveling = 1;
-				  elevator_direction = floor_position > serving ? 'd' : 'u';
-				  HAL_GPIO_WritePin(GPIOC, elevator_direction == 'u' ? DU_Pin : DD_Pin, GPIO_PIN_SET);
-				  HAL_TIM_Base_Start_IT(&htim6);
-			  }
+			HAL_TIM_Base_Start_IT(&htim15);
+		} // CASE 2
+		  // IF the elevator's floor position does not match the floor that we are serving
+		  else if (!traveling && floor_position != serving) {
+			  traveling = 1;
+			  elevator_direction = floor_position > serving ? 'd' : 'u';
+			  HAL_GPIO_WritePin(GPIOC, elevator_direction == 'u' ? DU_Pin : DD_Pin, GPIO_PIN_SET);
+			  HAL_TIM_Base_Start_IT(&htim6);
 		  }
+	}
+
+//	// IF there is at least 1 floor request and if the elevator is either not serving or it is serving and the current floor position ma
+//	if (requests[0] != 0 && (!serving || (serving && floor_position == requests[0]))) {
 }
 /* USER CODE END 1 */
