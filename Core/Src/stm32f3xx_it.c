@@ -729,17 +729,23 @@ void TIM6_DAC_IRQHandler(void)
 						i = 4;
 					}
 				}
-			}
-
-			if (traveling) {
-
-			} else {
 				count = 0;
 				HAL_TIM_Base_Stop_IT(&htim2);
 				start_timer = 0;
 				HAL_TIM_Base_Start_IT(&htim2);
 				HAL_TIM_Base_Start_IT(&htim15);
 				HAL_TIM_Base_Stop_IT(&htim6);
+			}
+
+			if (traveling) {
+
+			} else {
+//				count = 0;
+//				HAL_TIM_Base_Stop_IT(&htim2);
+//				start_timer = 0;
+//				HAL_TIM_Base_Start_IT(&htim2);
+//				HAL_TIM_Base_Start_IT(&htim15);
+//				HAL_TIM_Base_Stop_IT(&htim6);
 			}
 		}
 	}

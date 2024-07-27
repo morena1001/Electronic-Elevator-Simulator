@@ -8,5 +8,5 @@
 ../Core/Src/main.c:478:6:Elevator_Simulator_Init	3
 ../Core/Src/main.c:525:6:Program_Start_Light_Up	1
 ../Core/Src/main.c:573:6:HAL_GPIO_EXTI_Callback	3
-../Core/Src/main.c:581:6:HAL_TIM_PeriodElapsedCallback	10
-../Core/Src/main.c:624:6:Error_Handler	1
+../Core/Src/main.c:581:6:HAL_TIM_PeriodElapsedCallback	15
+../Core/Src/main.c:630:6:Error_Handler	1

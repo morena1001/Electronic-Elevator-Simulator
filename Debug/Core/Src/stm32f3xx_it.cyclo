@@ -16,6 +16,6 @@
 ../Core/Src/stm32f3xx_it.c:512:6:TIM1_BRK_TIM15_IRQHandler	5
 ../Core/Src/stm32f3xx_it.c:531:6:TIM2_IRQHandler	2
 ../Core/Src/stm32f3xx_it.c:554:6:EXTI15_10_IRQHandler	1
-../Core/Src/stm32f3xx_it.c:571:6:TIM6_DAC_IRQHandler	44
-../Core/Src/stm32f3xx_it.c:760:6:Reset_Timer	4
-../Core/Src/stm32f3xx_it.c:777:6:Choose_Floor_To_Service	13
+../Core/Src/stm32f3xx_it.c:571:6:TIM6_DAC_IRQHandler	43
+../Core/Src/stm32f3xx_it.c:766:6:Reset_Timer	4
+../Core/Src/stm32f3xx_it.c:783:6:Choose_Floor_To_Service	13

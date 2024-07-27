@@ -592,6 +592,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
 			}
 
 			// reset the serving variable and the LED corresponding to the elevator_direction variable
+			serving->requested = 0;
 			serving = NULL;
 			Choose_Floor_To_Service();
 			HAL_GPIO_WritePin(GPIOC, elevator_direction == 'u' ? DU_Pin : DD_Pin, GPIO_PIN_RESET);
@@ -599,8 +600,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
 
 		} // ELSE IF only one destination, begin moving elevator
 		  else if (floor_destinations[1] == 0) {
-			HAL_GPIO_WritePin(GPIOC, elevator_direction == 'u' ? DU_Pin : DD_Pin, GPIO_PIN_SET);
-			HAL_TIM_Base_Start_IT(&htim6);
+		    elevator_direction = floor_destinations[0] < floor_position ? 'd' : 'u';
+		    HAL_GPIO_WritePin(GPIOC, elevator_direction == 'u' ? DD_Pin : DU_Pin, GPIO_PIN_RESET);
+		    HAL_GPIO_WritePin(GPIOC, elevator_direction == 'u' ? DU_Pin : DD_Pin, GPIO_PIN_SET);
+		    HAL_TIM_Base_Start_IT(&htim6);
 
 		} // ELSE (two destinations), choose closest one, and move to that floor
 		  else {
@@ -611,6 +614,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
 				floor_destinations[0] = floor_destinations[1];
 				floor_destinations[1] = temp;
 			}
+			elevator_direction = floor_destinations[0] < floor_position ? 'd' : 'u';
+			HAL_GPIO_WritePin(GPIOC, elevator_direction == 'u' ? DD_Pin : DU_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOC, elevator_direction == 'u' ? DU_Pin : DD_Pin, GPIO_PIN_SET);
 			HAL_TIM_Base_Start_IT(&htim6);
 		}
 	}
