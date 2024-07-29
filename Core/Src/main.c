@@ -38,19 +38,10 @@
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
 struct request {
-	uint8_t requested; // Boolean that is 1 if request received, else 0
+	uint8_t requested; // 0 if a floor is not requested. 1 or more if requested 1 or more times
+	uint8_t floor_number; // Stores the floor number of a given request.
 	char direction; // Direction of the request. Can have values 'n' for no direction, 'u' for up, 'd' for down
 };
-
-//struct elevator_states {
-//	struct request floor_requests[3];
-//	char elevator_direction;
-//	uint8_t floor_position; // Stores position of the elevator
-//	uint8_t floor_destinations[2]; // Stores the destinations of the elevator (max is 2). Can have values '0' for no floor, or '1', '2', or '3' for the floor of the destination
-//	uint8_t requests[3]; // Stores the incoming requests (like a queue). Can have values '0' for no requests, or '1', '2', or '3' for the floor of the request
-//	uint8_t serving; // Stores the floor number that the elevator is currently serving. Can have values '0' for no floor, or '1', '2', or '3' for the floors that are currently being served
-//	uint8_t traveling;
-//};
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -66,13 +57,13 @@ UART_HandleTypeDef huart2;
 // htim15 : Controls the BCDI LED that shows that a destination can be chosen from inside the elevator
 
 char msg[40]; // Used to send messages regarding elevator status back to computer to be displayed in terminal
-struct request floor_requests[3]; // When a floor makes a request, the requested and direction values for a floor's corresponding element are updated
+struct request floor_requests[4]; // When a floor makes a request, the requested and direction values for a floor's corresponding element are updated
 char elevator_direction; // Stores direction of the elevator. Can have values 'n' for no direction, 'u' for up, and 'd' for down
 uint8_t floor_position; // Stores position of the elevator
 uint8_t floor_destinations[2]; // Stores the destinations of the elevator (max is 2). Can have values '0' for no floor, or '1', '2', or '3' for the floor of the destination
-uint8_t requests[3]; // Stores the incoming requests (like a queue). Can have values '0' for no requests, or '1', '2', or '3' for the floor of the request
+struct request* requests[4]; // Stores the incoming requests (like a queue). Can have values '0' for no requests, or '1', '2', or '3' for the floor of the request
 uint8_t pin_num; // Used to differentiate between OI2U_Pin and OI3D_Pin in the EXTI_9_5_IRQ
-uint8_t serving; // Stores the floor number that the elevator is currently serving. Can have values '0' for no floor, or '1', '2', or '3' for the floors that are currently being served
+struct request* serving; // Stores the floor number that the elevator is currently serving. Can have values '0' for no floor, or '1', '2', or '3' for the floors that are currently being served
 uint8_t start_timer; // Indicates that the htim2 has fully ran once
 uint8_t traveling; // Boolean variable that used for case 2 and 4 (Where the first floor that requests the elevator is another floor)
 /* USER CODE END PV */
@@ -492,10 +483,25 @@ void Elevator_Simulator_Init(void) {
 	HAL_NVIC_SetPriority(TIM1_BRK_TIM15_IRQn, 1, 1);
 	HAL_NVIC_EnableIRQ(TIM1_BRK_TIM15_IRQn);
 
-	for (int i = 0; i < 3; i++) {
-		floor_requests[i].requested = 0;
-		floor_requests[i].direction = 'n';
-	}
+	// Floor request corresponding to floor 1 in an upward direction
+	floor_requests[0].requested = 0;
+	floor_requests[0].floor_number = 1;
+	floor_requests[0].direction = 'u';
+
+	// Floor request corresponding to floor 2 in a downward direction
+	floor_requests[1].requested = 0;
+	floor_requests[1].floor_number = 2;
+	floor_requests[1].direction = 'd';
+
+	// Floor request corresponding to floor 2 in an upward direction
+	floor_requests[2].requested = 0;
+	floor_requests[2].floor_number = 2;
+	floor_requests[2].direction = 'u';
+
+	// Floor request corresponding to floor 3 in a downward direction
+	floor_requests[3].requested = 0;
+	floor_requests[3].floor_number = 3;
+	floor_requests[3].direction = 'd';
 
 	elevator_direction = 'n';
 	floor_position = 1; // The elevator always begins in the first floor
@@ -505,11 +511,11 @@ void Elevator_Simulator_Init(void) {
 	}
 
 	for (int i =  0; i < 3; i++) {
-			requests[i] = 0;
+			requests[i] = NULL;
 		}
 
 	pin_num = 0;
-	serving = 0;
+	serving = NULL;
 	start_timer = 0;
 	traveling = 0;
 
@@ -579,21 +585,25 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
 		// IF no destinations, the elevator has finished serving the floor in the serving variable
 		if (!floor_destinations[0]) {
 			// IF there are no other requests, stop moving the elevator
-			if (!requests[0] && !serving) {
+//			if (!requests[0] && !serving) {
+			if (!requests[0]) {
 				sprintf(msg, "NOTHING TO DO\r\n");
 				HAL_UART_Transmit(&huart2, (uint8_t*) msg, 15, 100);
 			}
 
 			// reset the serving variable and the LED corresponding to the elevator_direction variable
-			serving = 0;
+			serving->requested = 0;
+			serving = NULL;
 			Choose_Floor_To_Service();
 			HAL_GPIO_WritePin(GPIOC, elevator_direction == 'u' ? DU_Pin : DD_Pin, GPIO_PIN_RESET);
 
 
 		} // ELSE IF only one destination, begin moving elevator
 		  else if (floor_destinations[1] == 0) {
-			HAL_GPIO_WritePin(GPIOC, elevator_direction == 'u' ? DU_Pin : DD_Pin, GPIO_PIN_SET);
-			HAL_TIM_Base_Start_IT(&htim6);
+		    elevator_direction = floor_destinations[0] < floor_position ? 'd' : 'u';
+		    HAL_GPIO_WritePin(GPIOC, elevator_direction == 'u' ? DD_Pin : DU_Pin, GPIO_PIN_RESET);
+		    HAL_GPIO_WritePin(GPIOC, elevator_direction == 'u' ? DU_Pin : DD_Pin, GPIO_PIN_SET);
+		    HAL_TIM_Base_Start_IT(&htim6);
 
 		} // ELSE (two destinations), choose closest one, and move to that floor
 		  else {
@@ -604,6 +614,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
 				floor_destinations[0] = floor_destinations[1];
 				floor_destinations[1] = temp;
 			}
+			elevator_direction = floor_destinations[0] < floor_position ? 'd' : 'u';
+			HAL_GPIO_WritePin(GPIOC, elevator_direction == 'u' ? DD_Pin : DU_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOC, elevator_direction == 'u' ? DU_Pin : DD_Pin, GPIO_PIN_SET);
 			HAL_TIM_Base_Start_IT(&htim6);
 		}
 	}
