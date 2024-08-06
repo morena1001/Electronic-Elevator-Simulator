@@ -658,8 +658,7 @@ void TIM6_DAC_IRQHandler(void)
 //			start_timer = 0;
 //			if (requests[0] || floor_destinations[0])		HAL_TIM_Base_Start_IT(&htim2);
 			if (requests[0] || floor_destinations[0])	Reset_Timer(1, &htim2);
-			count = 0;
-			HAL_TIM_Base_Start_IT(&htim15);
+			Reset_Timer(1, &htim15);
 			HAL_TIM_Base_Stop_IT(&htim6);
 
 		} else if (floor_position == serving->floor_number && traveling) {
@@ -682,11 +681,11 @@ void TIM6_DAC_IRQHandler(void)
 				  HAL_GPIO_WritePin(FR3_GPIO_Port, FR3_Pin, GPIO_PIN_RESET);
 				  break;
 			  }
-			HAL_TIM_Base_Stop_IT(&htim2);
-			start_timer = 0;
-			if (requests[0])		HAL_TIM_Base_Start_IT(&htim2);
-			count = 0;
-			HAL_TIM_Base_Start_IT(&htim15);
+//			HAL_TIM_Base_Stop_IT(&htim2);
+//			start_timer = 0;
+//			if (requests[0])		HAL_TIM_Base_Start_IT(&htim2);
+			if (requests[0])	Reset_Timer(1, &htim2);
+			Reset_Timer(1, &htim15);
 			HAL_TIM_Base_Stop_IT(&htim6);
 		} else {
 			// CHECK IF THERE ARE ANY REQUESTS AT THAT FLOOR GOING IN THE SAME DIRECTION AS THE ELEVATOR, AND SERVICE THEM IF SO
@@ -730,23 +729,24 @@ void TIM6_DAC_IRQHandler(void)
 					}
 				}
 				count = 0;
-				HAL_TIM_Base_Stop_IT(&htim2);
-				start_timer = 0;
-				HAL_TIM_Base_Start_IT(&htim2);
-				HAL_TIM_Base_Start_IT(&htim15);
-				HAL_TIM_Base_Stop_IT(&htim6);
-			}
-
-			if (traveling) {
-
-			} else {
-//				count = 0;
 //				HAL_TIM_Base_Stop_IT(&htim2);
 //				start_timer = 0;
 //				HAL_TIM_Base_Start_IT(&htim2);
 //				HAL_TIM_Base_Start_IT(&htim15);
-//				HAL_TIM_Base_Stop_IT(&htim6);
+				Reset_Timer(2, &htim2, &htim15);
+				HAL_TIM_Base_Stop_IT(&htim6);
 			}
+
+//			if (traveling) {
+//
+//			} else {
+////				count = 0;
+////				HAL_TIM_Base_Stop_IT(&htim2);
+////				start_timer = 0;
+////				HAL_TIM_Base_Start_IT(&htim2);
+////				HAL_TIM_Base_Start_IT(&htim15);
+////				HAL_TIM_Base_Stop_IT(&htim6);
+//			}
 		}
 	}
   /* USER CODE END TIM6_DAC_IRQn 0 */
@@ -768,11 +768,12 @@ void Reset_Timer(int num, ...) {
 	va_start(arg_list, num);
 
 	for (int i = 0; i < num; i++) {
-		if (va_arg(arg_list, TIM_HandleTypeDef*)->Instance == TIM2) {
+		TIM_HandleTypeDef* temp = va_arg(arg_list, TIM_HandleTypeDef*);
+		if (temp->Instance == TIM2) {
 			HAL_TIM_Base_Stop_IT(&htim2);
 			start_timer = 0;
 			HAL_TIM_Base_Start_IT(&htim2);
-		} else if (va_arg(arg_list, TIM_HandleTypeDef*)->Instance == TIM15) {
+		} else if (temp->Instance == TIM15) {
 			HAL_TIM_Base_Stop_IT(&htim15);
 			count = 0;
 			HAL_TIM_Base_Start_IT(&htim15);
